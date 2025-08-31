@@ -1,0 +1,1 @@
+The documentation provides a detailed method of installation of ambertools and amber; NAB; and gromacs. This also provides the procedure of building a system for simulation and doing md simulation using amber. 
