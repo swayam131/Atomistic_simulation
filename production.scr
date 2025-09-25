@@ -1,0 +1,14 @@
+#!/bin/bash -l
+
+export AMBERHOME=/home/swaym/amber/pmemd24/
+export CUDA_VISIBLE_DEVICES=1
+
+cd /home/swaym/amber_Simulation/g4_dna/production; echo "starting production at 'date'"
+
+$AMBERHOME/bin/pmemd.cuda -O -i md.in -p RAMP1_ion.prmtop -c 9md.rst7\
+ -ref 9md.rst7 -o RAMP1_md.mdout -r RAMP1_md.rst7 -x RAMP1_md.nc
+
+
+echo "ending production at 'date'"
+
+
