@@ -1,0 +1,362 @@
+Ambertools(https://ambermd.org/AmberTools.php):
+For linux/windows-subsystem linux, install the requirements as follows:
+mkdir amber
+cp AmberTools24.tar.bz2 amber/
+sudo apt-get install tcsh make
+sudo apt-get install gcc gfortran
+sudo apt-get install flex bison patch bc wget 
+
+(for old workstation installed bison flex manually: # Flex
+wget https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+tar -xvzf flex-2.6.4.tar.gz
+cd flex-2.6.4
+./configure
+make
+sudo make install
+Didnt work
+# Bison
+wget https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.gz
+tar -xvzf bison-3.8.2.tar.gz
+cd bison-3.8.2
+./configure
+make
+sudo make install
+
+)
+Had to install cmake from scratch and add it to the path as it needed cmake version > 3.5 
+(
+wget https://github.com/Kitware/CMake/releases/download/v3.30.3/cmake-3.30.3.tar.gz
+tar -xvzf cmake-3.30.3.tar.gz
+cd cmake-3.30.3
+./bootstrap
+make -j$(nproc)
+sudo make install
+cmake --version
+) then add it to path by typing command: export PATH=/usr/local/bin:$PATH
+
+
+sudo apt-get update --fix-mixing
+apt-get install xorg-dev libz-dev libbz2-dev
+Then start installing amber
+cd amber/
+ls
+tar xvfj AmberTools24.tar.bz2
+cd amber24_src/
+ls
+cd build/
+ls
+vi run_cmake
+./run_cmake
+make install
+sudo apt-get install bison
+./run_cmake
+make install
+ls
+ll
+cd AmberTools/
+ls
+cd ..
+ls
+cd build/
+ls
+cd ../../
+ls
+cd amber24 (creates two directories; one with amber24 and amber24_src; amber.sh directory is amber24 and source that)
+ls
+source /path/amber.sh
+vi ~/.bashrc #give path of amber.sh
+source ~/.bashrc (source it ; not bash it)
+ls
+make test.serial
+
+
+
+For amber (only which is for md simulation; free for noncommercial use); download the pmemd.*.bz2 file , extract it and do the same installation as ambertools.
+
+#conda installation
+  mkdir conda
+  cd conda
+  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  ls
+ bash miniconda.sh -b -p $HOME/miniconda
+  $HOME/miniconda/bin/conda init
+  vi ~/.bashrc
+  source ~/.bashrc
+  conda deactivate
+
+
+
+Through conda 2. conda install conda-forge::ambertools (in the env am,bertool25 by doing: 
+conda create --name AmberTools25 python=3.12 (Only done once.)
+  3. conda activate AmberTools25  (after 2; inside this environment install pmeed as usual (had to do conda install -c conda-forge flex bison patch bc tcsh make xorg-dev libz-dev libbz2-dev in ambertool25 env; after installing this do ./run_cmake).  ##worked #sometimes xorg-dev libz-dev libbz2-dev these dont get installed in conda
+
+NAB is not included in ambertool recent versions. NAB is important to create any shape of rna dna molecules for md simulation. To install it, download the zip file from the github (https://github.com/dacase/nabc) and then do the following.
+ unzip nabc-main.zip 
+ cd nabc-main/
+ ls
+ ./configure # configure
+ make clean && make install #clean and install
+ ls
+ make nab #To compile nap
+ nab
+ ls
+ cd test/ 
+ ls
+ cd nab/
+ ls
+ make test #to see if tests passed or failed
+ cd ../shifts/
+ make shifts
+ make test # to see if shift is installed
+ cd ..
+ ls
+ source nabc.sh #first source the nabc.sh file; then only use it
+ nab bin/dna.nab The input is in bin and named as dna. nab
+ ./a.out #to execute nab 
+ ls
+ vi dna.pdb
+ vmd dna.pdb #To visualize the output “dna.pdb” file
+
+
+#Gromacs installation
+tar xfz gromacs-2025.2.tar.gz
+cd gromacs-2025.2
+mkdir build
+cd build
+cmake .. -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON (cmake error happens if not installed properly and install it properly with snap or apt get and should be in the path)
+make
+make check
+sudo make install
+source /usr/local/gromacs/bin/GMXRC
+
+
+# Data file preparation for md simulation
+AlphaFold structure file generation:
+1. Open AlphaFold server (https://alphafoldserver.com/)
+2. Paste sequence from fasta file from rcsb site pdb file and put it here. For DNA give 1 copy for 5` to 3` sequence from fasta file and then give another DNA and give one copy for that with the chain B sequence. And submit job. PTM with 0.8 is confident. 0.6 to 0.8 is grey area.
+3. The file can be downloaded in zip folder and .cif file is present in that folder and can be converted to .pdb file using vmd.
+4. Then use ambertools to create the initial structure for simulation.
+
+
+#when there are multiple models in a single pdb file:
+pip install pdb-tools
+
+pdb_selmodel -1 input.pdb > model1.pdb
+
+
+
+
+Ambertool data file preparation:
+1. Download yy1 pdb file from rcsb
+2. Open the structure in VMD and see what non-standard residue is there.
+3. 1udb.pdb file: there are 4 ZN and some HOH HETATMs. Since we are modeling explicite water solven, we can keep these water molecules. replace HETATM to "ATOM" so that the sequence will be continuous. Be sure to keep the two spaces after the ATOM so the rest of the columns will be lined up (space is important). Sometimes, other solvents or phosphates will be present. These do not affect the function of the protein, so they can be removed.
+4. H++ web server (virginia tech) gives protonation state and also solvate it. But we may not use this solvate method. Use this only to know protonation state and charge residue. 5. Remove the connects from pdb file.
+3. tleap usage to create amber topo and coordinate file:
+# Protein and DNA force fields (example)
+source leaprc.protein.ff19SB
+source leaprc.DNA.bsc1
+
+# TIP3P water force field
+source leaprc.water.tip3p
+ramp=loadpdb RAMP1.pdb
+saveAmberParm ramp RAMP1_gas.prmtop RAMP1_gas.inpcrd
+
+addions ramp Na+ 0 (add this according to H++ generated residue charge (write 0 in the command as tleap will add Na ions to neutralize or get the charge residue number from H++ log file and add Na+ 24 or something like that, but Na+ 0 worked better for me.)
+addions ramp Cl- 0
+#solvate
+solvateoct ramp TIP3PBOX 10.0
+addIonsRand ramp Na+ 19 Cl- 19
+saveamberparm ramp RAMP1_ion.prmtop RAMP1_ion.inpcrd
+
+Visualization of amber topo and crd file in vmd (tkconsole):
+(amber_simulation) 49 % mol new RAMP1_ion.prmtop type parm7
+(amber_simulation) 50 % mol addfile RAMP1_ion.inpcrd type rst7
+
+
+Convert the modified topology and coordinate file to pdb file. 
+Create a pdb.in file in a text editor and put 
+trajin RAMP1_ion.inpcrd
+trajout RAMP1_wions_water.pdb PDB
+run
+There.
+Then do $AMBERHOME/bin/cpptraj -p RAMP1_ion.prmtop -i pdb.in>pdb.out
+
+(Note: this way the pdb file generated shows the solvated protein/nucleicacid; but somehow when i just want to visualize the inpcrd and prmtp in tkconsole of vmd, i can not visulaize it. So try to generate the pdb file using cpptraj from inpcrd and prmtop and then visulaize it in vmd. I have tried this with downloaded ds dna as well.)
+# to visualize ions:
+Load your structure/trajectory into VMD.
+
+
+Open Graphics → Representations (Display → Graphical Representations… or press r).
+
+
+In the Selected Atoms field, type a selection for the ion name, for example:
+
+
+name NA → selects all sodium ions.
+
+
+name K → selects all potassium ions.
+
+
+name CL → selects chloride.
+
+
+resname MG → magnesium if defined as residue.
+
+
+If unsure, use wildcards: element Na or resname NA*.
+
+
+Click Create Rep or Apply to display them.
+
+
+You can change Drawing Method to VDW (big spheres) or CPK to make them stand out.
+
+
+#for alphafold pdb files, i used vmd to convert .cif file to .pdb file; then: pdb4amber -i af_model.pdb -o clean.pdb --reduce
+
+
+
+
+Md simulation:
+Create .in files for amber input and put them in a .scr file and do ./all_relax.scr in the terminal and the scr file contains: 
+—-----------------------------------------------------------
+#!/bin/bash -l
+
+export AMBERHOME=/home/swayamshree/Desktop/amber/pmemd24/bin
+export CUDA_VISIBLE_DEVICES=0
+
+cd /home/swayamshree/Desktop/amber_simulation/test/all_relax; echo "starting 1min at 'date'"
+
+$AMBERHOME/pmemd -O -i 1min.in\
+            -o 1min.out -p RAMP1_ion.prmtop -c RAMP1_ion.inpcrd -r 1min.rst7\
+            -inf 1min.info -ref RAMP1_ion.inpcrd -x mdcrd.1min
+echo "ending 1min at 'date'"
+
+echo "starting 2mdheat at 'date'"
+
+$AMBERHOME/pmemd -O -i 2mdheat.in\
+            -o 2mdheat.out -p RAMP1_ion.prmtop -c 1min.rst7 -r 2mdheat.rst7\
+            -inf 2mdheat.info -ref 1min.rst7 -x mdcrd.2mdheat
+echo "ending 2mdheat at 'date'"
+
+echo "starting 3md at 'date'"
+
+$AMBERHOME/pmemd -O -i 3md.in\
+            -o 3md.out -p RAMP1_ion.prmtop -c 2mdheat.rst7 -r 3md.rst7\
+            -inf 3md.info -ref 2mdheat.rst7 -x mdcrd.3md
+echo "ending 3md at 'date'"
+
+echo "starting 4md at 'date'"
+
+$AMBERHOME/pmemd -O -i 4md.in\
+            -o 4md.out -p RAMP1_ion.prmtop -c 3md.rst7 -r 4md.rst7\
+            -inf 4md.info -ref 3md.rst7 -x mdcrd.4md
+echo "ending 4md at 'date'"
+
+echo "starting 5min at 'date'"
+
+$AMBERHOME/pmemd -O -i 5min.in\
+            -o 5min.out -p RAMP1_ion.prmtop -c 4md.rst7 -r 5min.rst7\
+            -inf 5min.info -ref 4md.rst7 -x mdcrd.5min
+echo "ending 5min at 'date'"
+
+echo "starting 6md at 'date'"
+
+$AMBERHOME/pmemd -O -i 6md.in\
+            -o 6md.out -p RAMP1_ion.prmtop -c 5min.rst7 -r 6md.rst7\
+            -inf 6md.info -ref 5min.rst7 -x mdcrd.6md
+echo "ending 6md at 'date'"
+
+echo "starting 7md at 'date'"
+
+$AMBERHOME/pmemd -O -i 7md.in\
+            -o 7md.out -p RAMP1_ion.prmtop -c 6md.rst7 -r 7md.rst7\
+            -inf 7md.info -ref 6md.rst7 -x mdcrd.7md
+echo "ending 7md at 'date'"
+
+echo "starting 8md at 'date'"
+
+$AMBERHOME/pmemd -O -i 8md.in\
+            -o 8md.out -p RAMP1_ion.prmtop -c 7md.rst7 -r 8md.rst7\
+            -inf 8md.info -ref 7md.rst7 -x mdcrd.8md
+echo "ending 8md at 'date'"
+
+echo "starting 9md at 'date'"
+
+$AMBERHOME/pmemd -O -i 9md.in\
+            -o 9md.out -p RAMP1_ion.prmtop -c 8md.rst7 -r 9md.rst7\
+            -inf 9md.info -ref 8md.rst7 -x 9md.nc
+echo "ending 9md at 'date'"
+
+—----------------------------------------------------------
+Note: pmemd.cuda is not running in local system. Use only pmemd; remove .cuda from the command.
+How to visualize amber output trajectory in vmd:
+First load the prmtop file (which is the input topology file) It will not show anything in the vis window. Then go to the file—> new molecule—> select the prmtop file and then browse the .nc file, which is the trajectory file. It will show the trajectory file in the visualiozation window.
+
+Production run:
+
+#Amber_nucleic_acid_building
+bsc1 and OL15 forcefields 
+bsc1: robust, conservative, validated across many DNA forms (good default).
+
+
+OL15: more accurate for base-step flexibility, groove geometry, and unusual DNA forms (e.g., quadruplexes, mismatches).
+
+
+Many people test both if working on non-canonical DNA.
+
+#Amber manual reference forcefield:
+• a protein force field (recommended choice is ff19SB)
+• a DNA force field (recommended choice is OL24)
+• an RNA force field (recommended choice is OL3)
+• a carbohydrate force field (recommended choice is GLYCAM 06j)
+• a lipid force field (recommended choice is lipid21)
+• a water model with associated atomic ions (more variable); popular choices are spc/e, tip4pew, and OPC.
+Not needed if you are using an implicit solvent model.
+• a general force field, for organic molecules like ligands (recommended choice is gaff2)
+• other components (such as modified amino acids or nucleotides, other ions), as needed
+
+#ALPHAFOLD STRUCTURE SIMULATION
+There were a lot of problems in making this alphafold structure amber ready.
+The problems: it was a .cif file and no hydrogens added here and there were non amber type residue names like OP3.
+I uploaded the .cif file to chimerax; then i go to tools→ build structure—> add hydrogen—> save as .pdb with amber option below the interface.
+Then load this pdb to vmd and again load the molecule to vmd ready pdb file as it treats K ions as different residues.
+Open this pdb in text editor if there are op3 make it op1 and also make Ks same chain as the dna.
+Then do the usual leap. 
+Somehow this alphafold doesnot give correct residue names sometimes. Have to do a lot of work to make it leap ready.
+
+
+
+After running the relaxation, get the output as 9md.rst7 and RAMp1_ion.prmtop and then run ./production.scr
+
+Production.scr
+#!/bin/bash -l
+
+export AMBERHOME=/home/swaym/amber/pmemd24/
+export CUDA_VISIBLE_DEVICES=1
+
+cd /home/swaym/amber_Simulation/g4_dna_rcsb_pdb/production; echo "starting production at 'date'"
+
+$AMBERHOME/bin/pmemd.cuda -O -i md.in -p RAMP1_ion.prmtop -c 9md.rst7\
+ -ref 9md.rst7 -o RAMP1_md.mdout -r RAMP1_md.rst7 -x RAMP1_md.nc
+
+
+echo "ending production at 'date'"
+
+#For DNA and protein restraintmask is different in the command: restraintmask="@CA,N,C"
+This is for protein backbone; for dna check prmtop file and see what are the residues for backbone; use restraintmask="@P,OP1,OP2,C4’" like these
+
+
+#How do i know simulation is correct? What analyses can i do?
+After relaxation:
+Did the water position change in reponse to the relaxation proctocol?
+Did the program read in your file OK?
+Does it look like a box of water?
+What do your ions look like (might have to do CPK or VDW visualization to see these).
+Did the solute change slightly in response to the relaxation procotol?
+- Look at the backbone atoms and compare them from one rst7 file to another.
+If you have problems after running these inputs, you can use cpptraj to check for any issues. Use the check command in cpptraj to look for bad bonds and close contacts that could result from high energies.
+#DNA-TF simulation:
+
+Have to restrain both backbones.
